@@ -47,6 +47,7 @@ enum class ErrorCode
 
 	// Defined by the protocol.
 	RequestCancelled = -32800,
+	RequestFailed = -32803,
 	ContentModified = -32801,
 };
 

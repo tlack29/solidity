@@ -231,7 +231,10 @@ bool LanguageServer::run()
 	{
 		optional<Json::Value> const jsonMessage = m_client.receive();
 		if (!jsonMessage)
+		{
+			m_client.error({}, ErrorCode::ParseError, "Error parsing JSONRPC request.");
 			continue;
+		}
 
 		try
 		{
@@ -245,6 +248,7 @@ bool LanguageServer::run()
 		}
 		catch (exception const& e)
 		{
+			m_client.error({}, ErrorCode::InternalError, "Unhandled exception: " + string(e.what()));
 			log("Unhandled exception caught when handling message. "s + e.what());
 		}
 	}
@@ -293,20 +297,24 @@ void LanguageServer::handleTextDocumentDidOpen(MessageID /*_id*/, Json::Value co
 	compileSourceAndReport(uri);
 }
 
-void LanguageServer::handleTextDocumentDidChange(MessageID /*_id*/, Json::Value const& _args)
+void LanguageServer::handleTextDocumentDidChange(MessageID _id, Json::Value const& _args)
 {
 	auto const uri = _args["textDocument"]["uri"].asString();
 	auto const contentChanges = _args["contentChanges"];
 
 	for (Json::Value jsonContentChange: contentChanges)
 	{
-		// TODO all the errors here have to be reported to the client.
-		if (!jsonContentChange.isObject()) // Protocol error, will only happen on broken clients, so silently ignore it.
-			continue;
+		if (!jsonContentChange.isObject())
+		{
+			m_client.error(_id, ErrorCode::RequestFailed, "Invalid content reference.");
+			return;
+		}
 
 		if (!clientPathSourceKnown(uri))
-			// should be an error as well
-			continue;
+		{
+			m_client.error(_id, ErrorCode::RequestFailed, "Unknown file: " + uri);
+			return;
+		}
 
 		string text = jsonContentChange["text"].asString();
 		if (!jsonContentChange["range"].isObject()) // full content update
@@ -326,10 +334,13 @@ void LanguageServer::handleTextDocumentDidChange(MessageID /*_id*/, Json::Value 
 		optional<int> const startOpt = CharStream::translateLineColumnToPosition(buffer, startLine, startColumn);
 		optional<int> const endOpt = CharStream::translateLineColumnToPosition(buffer, endLine, endColumn);
 		if (!startOpt || !endOpt)
-			continue;
+		{
+			m_client.error(_id, ErrorCode::RequestFailed, "Invalid source range: " + jsonCompactPrint(jsonRange));
+			return;
+		}
 
 		size_t const start = static_cast<size_t>(startOpt.value());
-		size_t const count = static_cast<size_t>(endOpt.value()) - start; // TODO: maybe off-by-1 bug? +1 missing?
+		size_t const count = static_cast<size_t>(endOpt.value()) - start;
 		buffer.replace(start, count, move(text));
 		m_fileReader.setSourceDirectly(clientPathToSourceUnitName(uri), move(buffer));
 	}
