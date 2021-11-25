@@ -17,35 +17,17 @@
 // SPDX-License-Identifier: GPL-3.0
 #pragma once
 
-#include <libsolidity/ast/AST.h>
-#include <libsolidity/formal/ModelCheckerSettings.h>
 #include <libsolidity/interface/CompilerStack.h>
-#include <libsolidity/interface/StandardCompiler.h>
 #include <libsolidity/interface/FileReader.h>
-#include <libsolidity/interface/ImportRemapper.h>
 #include <libsolidity/lsp/LSPTypes.h>
-#include <libsolidity/lsp/ReferenceCollector.h>
 #include <libsolidity/lsp/Transport.h>
-
-#include <liblangutil/SourceReferenceExtractor.h>
-
-#include <fmt/format.h>
 
 #include <json/value.h>
 
-#include <boost/filesystem/path.hpp>
-
 #include <functional>
-#include <iostream>
 #include <map>
-#include <memory>
 #include <optional>
-#include <ostream>
-#include <set>
 #include <string>
-#include <string_view>
-#include <unordered_map>
-#include <variant>
 #include <vector>
 
 namespace solidity::lsp
@@ -61,7 +43,7 @@ class LanguageServer
 {
 public:
 	/// @param _transport Customizable transport layer.
-	explicit LanguageServer(std::unique_ptr<Transport> _transport);
+	explicit LanguageServer(Transport& _transport);
 
 	/// Compiles the source behind path @p _file and updates the diagnostics pushed to the client.
 	///
@@ -75,11 +57,6 @@ public:
 	///
 	/// @return boolean indicating normal or abnormal termination.
 	bool run();
-
-	/// Initiates the main event loop to terminate as soon as possible.
-	void terminate();
-
-	Transport& transport() noexcept { return *m_client; }
 
 protected:
 	void handleInitialize(MessageID _id, Json::Value const& _args);
@@ -146,9 +123,11 @@ protected:
 	using Handler = std::function<void(MessageID, Json::Value const&)>;
 	using HandlerMap = std::unordered_map<std::string, Handler>;
 
-	std::unique_ptr<Transport> m_client;
+	Transport& m_client;
 	HandlerMap m_handlers;
+	/// Server shutdown (but not process exit) has been requested by the client.
 	bool m_shutdownRequested = false;
+	/// Server process exit has been requested by the client.
 	bool m_exitRequested = false;
 
 	/// FileReader is used for reading files during comilation phase but is also used as VFS for the LSP.
@@ -160,5 +139,4 @@ protected:
 	Json::Value m_settingsObject;
 };
 
-} // namespace solidity
-
+}

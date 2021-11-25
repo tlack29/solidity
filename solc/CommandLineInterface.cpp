@@ -906,17 +906,8 @@ void CommandLineInterface::handleAst()
 
 void CommandLineInterface::serveLSP()
 {
-	std::unique_ptr<lsp::Transport> transport = make_unique<lsp::JSONTransport>();
-#if defined(SOLC_LSP_TCP)
-	if (m_options.lsp.port.has_value())
-	{
-		unsigned const port = m_options.lsp.port.value();
-		transport = make_unique<lsp::LSPTCPTransport>(static_cast<unsigned short>(port), traceLevel, traceLogger);
-	}
-#endif
-
-	lsp::LanguageServer languageServer(move(transport));
-	languageServer.run();
+	lsp::JSONTransport transport;
+	lsp::LanguageServer{transport}.run();
 }
 
 bool CommandLineInterface::link()

@@ -157,10 +157,6 @@ set(sources
 	interface/Version.h
 	lsp/LanguageServer.cpp
 	lsp/LanguageServer.h
-	lsp/ReferenceCollector.cpp
-	lsp/ReferenceCollector.h
-	lsp/SemanticTokensBuilder.cpp
-	lsp/SemanticTokensBuilder.h
 	lsp/Transport.cpp
 	lsp/Transport.h
 	parsing/DocStringParser.cpp
