@@ -65,11 +65,11 @@ Json::Value toJson(LineColumn _pos)
 	return json;
 }
 
-Json::Value toJsonRange(int _startLine, int _startColumn, int _endLine, int _endColumn)
+Json::Value toJsonRange(LineColumn const& _start, LineColumn const& _end)
 {
 	Json::Value json;
-	json["start"] = toJson({_startLine, _startColumn});
-	json["end"] = toJson({_endLine, _endColumn});
+	json["start"] = toJson(_start);
+	json["end"] = toJson(_end);
 	return json;
 }
 
@@ -121,13 +121,13 @@ DocumentPosition LanguageServer::extractDocumentPosition(Json::Value const& _jso
 Json::Value LanguageServer::toRange(SourceLocation const& _location) const
 {
 	if (_location.start < 0 || _location.end < 0)
-		return toJsonRange(0, 0, 0, 0);
+		return toJsonRange({}, {});
 
 	solAssert(_location.sourceName, "");
 	CharStream const& stream = m_compilerStack.charStream(*_location.sourceName);
-	auto const [startLine, startColumn] = stream.translatePositionToLineColumn(_location.start);
-	auto const [endLine, endColumn] = stream.translatePositionToLineColumn(_location.end);
-	return toJsonRange(startLine, startColumn, endLine, endColumn);
+	LineColumn start = stream.translatePositionToLineColumn(_location.start);
+	LineColumn end = stream.translatePositionToLineColumn(_location.end);
+	return toJsonRange(start, end);
 }
 
 Json::Value LanguageServer::toJson(SourceLocation const& _location) const
