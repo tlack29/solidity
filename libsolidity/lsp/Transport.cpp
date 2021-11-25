@@ -119,9 +119,9 @@ optional<map<string, string>> JSONTransport::parseHeaders()
 		if (delimiterPos == string::npos)
 			return nullopt;
 
-		auto const name = boost::to_lower_copy(line.substr(0, delimiterPos));
-		auto const value = boost::trim_copy(line.substr(delimiterPos + 1));
-		headers[move(name)] = value;
+		auto name = boost::to_lower_copy(line.substr(0, delimiterPos));
+		auto value = boost::trim_copy(line.substr(delimiterPos + 1));
+		headers[move(name)] = move(value);
 	}
 	return {move(headers)};
 }

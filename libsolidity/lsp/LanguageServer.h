@@ -63,52 +63,13 @@ protected:
 	void handleWorkspaceDidChangeConfiguration(MessageID _id, Json::Value const& _args);
 	void handleTextDocumentDidOpen(MessageID _id, Json::Value const& _args);
 	void handleTextDocumentDidChange(MessageID _id, Json::Value const& _args);
-	void handleTextDocumentHover(MessageID _id, Json::Value const& _args);
-	void handleTextDocumentHighlight(MessageID _id, Json::Value const& _args);
-	void handleTextDocumentReferences(MessageID _id, Json::Value const& _args);
-	void handleGotoDefinition(MessageID _id, Json::Value const& _args);
-	void semanticTokensFull(MessageID _id, Json::Value const& _args);
-
-	/**
-	 * Constructs some tooltip (hover) text.
-	 *
-	 * The resulting text string should be in markdown format.
-	 */
-	std::string symbolHoverInformation(frontend::ASTNode const* _node);
 
 	/// Invoked when the server user-supplied configuration changes (initiated by the client).
 	void changeConfiguration(Json::Value const&);
 
-	/// Find all semantically equivalent occurrences of the symbol the current cursor is located at.
-	///
-	/// @returns a list of ranges to highlight as well as their use kind (read fraom, written to, other text).
-	std::vector<DocumentHighlight> semanticHighlight(frontend::ASTNode const* _node, std::string const& _path);
-
-	/// Finds all references of the current symbol at the given document position.
-	///
-	/// @returns all references as document ranges as well as their use kind (read fraom, written to, other text).
-	std::vector<langutil::SourceLocation> references(DocumentPosition _documentPosition);
-
 	/// Requests compilation of given client path.
 	/// @returns false if the file was not found.
 	bool compile(std::string const& _path);
-
-	frontend::ASTNode const* requestASTNode(DocumentPosition _filePos);
-
-	std::optional<langutil::SourceLocation> declarationPosition(frontend::Declaration const* _declaration);
-
-	std::vector<langutil::SourceLocation> findAllReferences(
-		frontend::Declaration const* _declaration,
-		std::string const& _sourceIdentifierName,
-		frontend::SourceUnit const& _sourceUnit
-	);
-
-	void findAllReferences(
-		frontend::Declaration const* _declaration,
-		std::string const& _sourceIdentifierName,
-		frontend::SourceUnit const& _sourceUnit,
-		std::vector<langutil::SourceLocation>& _output
-	);
 
 	DocumentPosition extractDocumentPosition(Json::Value const& _json) const;
 	Json::Value toRange(langutil::SourceLocation const& _location) const;
