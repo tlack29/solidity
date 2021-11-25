@@ -300,6 +300,7 @@ void LanguageServer::handleTextDocumentDidChange(MessageID /*_id*/, Json::Value 
 
 	for (Json::Value jsonContentChange: contentChanges)
 	{
+		// TODO all the errors here have to be reported to the client.
 		if (!jsonContentChange.isObject()) // Protocol error, will only happen on broken clients, so silently ignore it.
 			continue;
 
