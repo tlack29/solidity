@@ -120,6 +120,9 @@ DocumentPosition LanguageServer::extractDocumentPosition(Json::Value const& _jso
 
 Json::Value LanguageServer::toRange(SourceLocation const& _location) const
 {
+	if (_location.start < 0 || _location.end < 0)
+		return toJsonRange(0, 0, 0, 0);
+
 	solAssert(_location.sourceName, "");
 	CharStream const& stream = m_compilerStack.charStream(*_location.sourceName);
 	auto const [startLine, startColumn] = stream.translatePositionToLineColumn(_location.start);
@@ -169,42 +172,53 @@ void LanguageServer::compileSourceAndReport(string const& _path)
 {
 	compile(_path);
 
-	Json::Value params;
-	params["uri"] = _path;
+	map<string, Json::Value> diagnosticsBySourceUnit;
+	for (string const& sourceUnitName: m_fileReader.sourceCodes() | ranges::views::keys)
+		// TODO we already have the file mappings problem here.
+		diagnosticsBySourceUnit[sourceUnitName] = Json::arrayValue;
 
-	params["diagnostics"] = Json::arrayValue;
 	for (shared_ptr<Error const> const& error: m_compilerStack.errors())
 	{
-		SourceReferenceExtractor::Message const message = SourceReferenceExtractor::extract(m_compilerStack, *error);
+		SourceLocation const* location = error->sourceLocation();
+		if (!location || !location->sourceName)
+			// LSP only has diagnostics applied to individual files.
+			continue;
 
 		Json::Value jsonDiag;
 		jsonDiag["source"] = "solc";
 		jsonDiag["severity"] = toDiagnosticSeverity(error->type());
-		jsonDiag["message"] = message.primary.message;
-		jsonDiag["range"] = toJsonRange(
-			message.primary.position.line, message.primary.startColumn,
-			message.primary.position.line, message.primary.endColumn
-		);
-		if (message.errorId.has_value())
-			jsonDiag["code"] = Json::UInt64{message.errorId.value().error};
+		jsonDiag["code"] = Json::UInt64{error->errorId().error};
+		string message = error->typeName() + ":";
+		if (string const* comment = error->comment())
+			message += " " + *comment;
+		jsonDiag["message"] = move(message);
+		jsonDiag["range"] = toRange(*location);
 
-		for (SourceReference const& secondary: message.secondary)
-		{
-			Json::Value jsonRelated;
-			jsonRelated["message"] = secondary.message;
-			// TODO translate back?
-			jsonRelated["location"]["uri"] = secondary.sourceName;
-			jsonRelated["location"]["range"] = toJsonRange(
-				secondary.position.line, secondary.startColumn,
-				secondary.position.line, secondary.endColumn
-			);
-			jsonDiag["relatedInformation"].append(jsonRelated);
-		}
+		if (auto const* secondary = error->secondarySourceLocation())
+			for (auto&& [secondaryMessage, secondaryLocation]: secondary->infos)
+			{
+				// TODO the secondary location could actually be outside the
+				// client-supplied files, i.e. we might not have a reverse file name mapping.
+				// This means we have to compute the reverse file mapping without having the
+				// stored mapping.
+				if (!m_fileMappings.count(*secondaryLocation.sourceName))
+					continue;
+				Json::Value jsonRelated;
+				jsonRelated["message"] = secondaryMessage;
+				jsonRelated["location"] = toJson(secondaryLocation);
+				jsonDiag["relatedInformation"].append(jsonRelated);
+			}
 
-		params["diagnostics"].append(jsonDiag);
+		diagnosticsBySourceUnit[*location->sourceName].append(jsonDiag);
 	}
 
-	m_client.notify("textDocument/publishDiagnostics", params);
+	for (string const& sourceUnitName: m_fileReader.sourceCodes() | ranges::views::keys)
+	{
+		Json::Value params;
+		params["uri"] = m_fileMappings.at(sourceUnitName);
+		params["diagnostics"] = move(diagnosticsBySourceUnit.at(sourceUnitName));
+		m_client.notify("textDocument/publishDiagnostics", move(params));
+	}
 }
 
 bool LanguageServer::run()

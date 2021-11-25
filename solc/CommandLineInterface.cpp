@@ -765,7 +765,7 @@ bool CommandLineInterface::compile()
 	catch (Error const& _error)
 	{
 		if (_error.type() == Error::Type::DocstringParsingError)
-			serr() << "Documentation parsing error: " << *boost::get_error_info<errinfo_comment>(_error) << endl;
+			serr() << "Documentation parsing error: " << *_error.comment() << endl;
 		else
 		{
 			m_hasOutput = true;
