@@ -62,30 +62,30 @@ optional<Json::Value> JSONTransport::receive()
 
 	//traceMessage(jsonMessage, "Request");
 
-	return {jsonMessage};
+	return {move(jsonMessage)};
 }
 
-void JSONTransport::notify(string const& _method, Json::Value const& _message)
+void JSONTransport::notify(string _method, Json::Value _message)
 {
 	Json::Value json;
-	json["method"] = _method;
-	json["params"] = _message;
-	send(json);
+	json["method"] = move(_method);
+	json["params"] = move(_message);
+	send(move(json));
 }
 
-void JSONTransport::reply(MessageID _id, Json::Value const& _message)
+void JSONTransport::reply(MessageID _id, Json::Value _message)
 {
 	Json::Value json;
-	json["result"] = _message;
-	send(json, _id);
+	json["result"] = move(_message);
+	send(move(json), _id);
 }
 
-void JSONTransport::error(MessageID _id, ErrorCode _code, string const& _message)
+void JSONTransport::error(MessageID _id, ErrorCode _code, string _message)
 {
 	Json::Value json;
 	json["error"]["code"] = static_cast<int>(_code);
-	json["error"]["message"] = _message;
-	send(json, _id);
+	json["error"]["message"] = move(_message);
+	send(move(json), _id);
 }
 
 void JSONTransport::send(Json::Value _json, MessageID _id)
@@ -133,6 +133,7 @@ string JSONTransport::readBytes(int _n)
 
 	string data;
 	data.resize(static_cast<string::size_type>(_n));
+	// TODO handle EOF, otherwise data contains garbage
 	m_input.read(data.data(), _n);
 	return data;
 }

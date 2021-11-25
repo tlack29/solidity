@@ -50,10 +50,12 @@ enum class ErrorCode
 	ContentModified = -32801,
 };
 
-/// Transport layer API
-///
-/// The transport layer API is abstracted so it users become more testable as well as
-/// this way it could be possible to support other transports (HTTP for example) easily.
+/**
+ * Transport layer API
+ *
+ * The transport layer API is abstracted so it users become more testable as well as
+ * this way it could be possible to support other transports (HTTP for example) easily.
+ */
 class Transport
 {
 public:
@@ -61,12 +63,14 @@ public:
 
 	virtual bool closed() const noexcept = 0;
 	virtual std::optional<Json::Value> receive() = 0;
-	virtual void notify(std::string const& _method, Json::Value const& _params) = 0;
-	virtual void reply(MessageID _id, Json::Value const& _result) = 0;
-	virtual void error(MessageID _id, ErrorCode _code, std::string const& _message) = 0;
+	virtual void notify(std::string _method, Json::Value _params) = 0;
+	virtual void reply(MessageID _id, Json::Value _result) = 0;
+	virtual void error(MessageID _id, ErrorCode _code, std::string _message) = 0;
 };
 
-/// LSP Transport using JSON-RPC over iostreams.
+/**
+ * LSP Transport using JSON-RPC over iostreams.
+ */
 class JSONTransport : public Transport
 {
 public:
@@ -81,9 +85,9 @@ public:
 
 	bool closed() const noexcept override;
 	std::optional<Json::Value> receive() override;
-	void notify(std::string const& _method, Json::Value const& _params) override;
-	void reply(MessageID _id, Json::Value const& _result) override;
-	void error(MessageID _id, ErrorCode _code, std::string const& _message) override;
+	void notify(std::string _method, Json::Value _params) override;
+	void reply(MessageID _id, Json::Value _result) override;
+	void error(MessageID _id, ErrorCode _code, std::string _message) override;
 
 protected:
 	/// Reads given number of bytes from the client.
@@ -102,4 +106,4 @@ private:
 	std::ostream& m_output;
 };
 
-} // end namespace
+}

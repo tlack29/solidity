@@ -273,7 +273,7 @@ void LanguageServer::handleInitialize(MessageID _id, Json::Value const& _args)
 	replyArgs["capabilities"]["textDocumentSync"]["openClose"] = true;
 	replyArgs["capabilities"]["textDocumentSync"]["change"] = 2; // 0=none, 1=full, 2=incremental
 
-	m_client.reply(_id, replyArgs);
+	m_client.reply(_id, move(replyArgs));
 }
 
 void LanguageServer::handleWorkspaceDidChangeConfiguration(MessageID, Json::Value const& _args)
