@@ -152,29 +152,24 @@ optional<int> CharStream::translateLineColumnToPosition(int _line, int _column) 
 
 optional<int> CharStream::translateLineColumnToPosition(std::string const& _text, int _line, int _column)
 {
-	size_t offset = 0;
+	if (_line < 0)
+		return nullopt;
 
-	while (_line > 0)
+	size_t offset = 0;
+	for (int i = 0; i < _line; i++)
 	{
 		offset = _text.find('\n', offset);
 		if (offset == _text.npos)
 			return nullopt;
 		offset++; // Skip linefeed.
-		_line--;
 	}
 
-	auto const nextEndOfLineOffset = _text.find('\n', offset);
-	if (nextEndOfLineOffset != string::npos)
-	{
-		if (offset + static_cast<size_t>(_column) < nextEndOfLineOffset)
-			return static_cast<int>(offset) + _column; // Column fitting current non-last line.
-		else
-			return nullopt; // Column-overflow in current non-last line.
-	}
+	size_t endOfLine = _text.find('\n', offset);
+	if (endOfLine == string::npos)
+		endOfLine = _text.size();
 
-	if (offset + static_cast<size_t>(_column) < _text.size())
-		return static_cast<int>(offset) + _column; // Column fitting into last line
-
-	return nullopt;
+	if (offset + static_cast<size_t>(_column) > endOfLine)
+		return nullopt;
+	return offset + static_cast<size_t>(_column);
 }
 

@@ -71,16 +71,30 @@ BOOST_AUTO_TEST_CASE(test_fail)
 
 BOOST_AUTO_TEST_CASE(translateLineColumnToPosition)
 {
-	testLineColumnToPositionTranslationFail(0, 0, "");
+	testLineColumnToPositionTranslationFail(-1, 0, "ABC");
+	testLineColumnToPositionTranslationFail(0, -1, "ABC");
+
+	testLineColumnToPositionTranslation(0, 0, 0, "");
+	testLineColumnToPositionTranslationFail(1, 0, "");
+	testLineColumnToPositionTranslationFail(0, 1, "");
 
 	// With last line containing no LF
 	testLineColumnToPositionTranslation(0, 0, 0, "ABC");
 	testLineColumnToPositionTranslation(0, 1, 1, "ABC");
 	testLineColumnToPositionTranslation(0, 2, 2, "ABC");
+	testLineColumnToPositionTranslation(0, 3, 3, "ABC");
+	testLineColumnToPositionTranslationFail(0, 4, "ABC");
+	testLineColumnToPositionTranslationFail(1, 0, "ABC");
 
+	testLineColumnToPositionTranslation(0, 3, 3, "ABC\nDEF");
+	testLineColumnToPositionTranslationFail(0, 4, "ABC\nDEF");
 	testLineColumnToPositionTranslation(1, 0, 4, "ABC\nDEF");
 	testLineColumnToPositionTranslation(1, 1, 5, "ABC\nDEF");
 	testLineColumnToPositionTranslation(1, 2, 6, "ABC\nDEF");
+	testLineColumnToPositionTranslation(1, 3, 7, "ABC\nDEF");
+	testLineColumnToPositionTranslationFail(1, 4, "ABC\nDEF");
+	testLineColumnToPositionTranslationFail(2, 0, "ABC\nDEF");
+	testLineColumnToPositionTranslationFail(2, 1, "ABC\nDEF");
 
 	// With last line containing LF
 	testLineColumnToPositionTranslation(0, 0, 0, "ABC\nDEF\n");
@@ -90,18 +104,14 @@ BOOST_AUTO_TEST_CASE(translateLineColumnToPosition)
 	testLineColumnToPositionTranslation(1, 0, 4, "ABC\nDEF\n");
 	testLineColumnToPositionTranslation(1, 1, 5, "ABC\nDEF\n");
 	testLineColumnToPositionTranslation(1, 2, 6, "ABC\nDEF\n");
+	testLineColumnToPositionTranslation(1, 3, 7, "ABC\nDEF\n");
+	testLineColumnToPositionTranslationFail(1, 4, "ABC\nDEF\n");
+	testLineColumnToPositionTranslation(2, 0, 8, "ABC\nDEF\n");
+	testLineColumnToPositionTranslationFail(2, 1, "ABC\nDEF\n");
 
 	testLineColumnToPositionTranslation(2, 0, 8, "ABC\nDEF\nGHI\n");
 	testLineColumnToPositionTranslation(2, 1, 9, "ABC\nDEF\nGHI\n");
 	testLineColumnToPositionTranslation(2, 2, 10, "ABC\nDEF\nGHI\n");
-
-	// Column overflows.
-	testLineColumnToPositionTranslationFail(0, 3, "ABC\nDEF\n");
-	testLineColumnToPositionTranslationFail(1, 3, "ABC\nDEF\n");
-	testLineColumnToPositionTranslationFail(2, 3, "ABC\nDEF\nGHI\n");
-
-	// Line overflow.
-	testLineColumnToPositionTranslationFail(3, 0, "ABC\nDEF\nGHI\n");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
