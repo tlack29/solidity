@@ -134,14 +134,25 @@ Json::Value LanguageServer::toJson(SourceLocation const& _location) const
 {
 	solAssert(_location.sourceName);
 	Json::Value item = Json::objectValue;
-	item["uri"] = m_fileMappings.at(*_location.sourceName);
+	item["uri"] = sourceUnitNameToClientPath(*_location.sourceName);
 	item["range"] = toRange(_location);
 	return item;
 }
 
 string LanguageServer::clientPathToSourceUnitName(string const& _path) const
 {
-	return m_fileReader.cliPathToSourceUnitName(_path);
+	// TOOD test with with base path set.
+	string path = _path;
+	if (path.find("file://") == 0)
+		path = path.substr(7);
+	// TODO this still uses the CWD in some circumstances.
+	return m_fileReader.cliPathToSourceUnitName(path);
+}
+
+string LanguageServer::sourceUnitNameToClientPath(string const& _sourceUnitName) const
+{
+	// TOOD test with with base path set.
+	return "file://" + (m_fileReader.basePath() / _sourceUnitName).generic_string();
 }
 
 bool LanguageServer::clientPathSourceKnown(string const& _path) const
@@ -174,7 +185,6 @@ void LanguageServer::compileSourceAndReport(string const& _path)
 
 	map<string, Json::Value> diagnosticsBySourceUnit;
 	for (string const& sourceUnitName: m_fileReader.sourceCodes() | ranges::views::keys)
-		// TODO we already have the file mappings problem here.
 		diagnosticsBySourceUnit[sourceUnitName] = Json::arrayValue;
 
 	for (shared_ptr<Error const> const& error: m_compilerStack.errors())
@@ -197,12 +207,6 @@ void LanguageServer::compileSourceAndReport(string const& _path)
 		if (auto const* secondary = error->secondarySourceLocation())
 			for (auto&& [secondaryMessage, secondaryLocation]: secondary->infos)
 			{
-				// TODO the secondary location could actually be outside the
-				// client-supplied files, i.e. we might not have a reverse file name mapping.
-				// This means we have to compute the reverse file mapping without having the
-				// stored mapping.
-				if (!m_fileMappings.count(*secondaryLocation.sourceName))
-					continue;
 				Json::Value jsonRelated;
 				jsonRelated["message"] = secondaryMessage;
 				jsonRelated["location"] = toJson(secondaryLocation);
@@ -215,7 +219,7 @@ void LanguageServer::compileSourceAndReport(string const& _path)
 	for (string const& sourceUnitName: m_fileReader.sourceCodes() | ranges::views::keys)
 	{
 		Json::Value params;
-		params["uri"] = m_fileMappings.at(sourceUnitName);
+		params["uri"] = sourceUnitNameToClientPath(sourceUnitName);
 		params["diagnostics"] = move(diagnosticsBySourceUnit.at(sourceUnitName));
 		m_client.notify("textDocument/publishDiagnostics", move(params));
 	}
@@ -258,6 +262,7 @@ void LanguageServer::handleInitialize(MessageID _id, Json::Value const& _args)
 		rootPath = rootPath.asString();
 
 	//log("root path: " + rootPath);
+	// TODO the lsp client probably uses file://... for the root path
 	m_fileReader.setBasePath(boost::filesystem::path(rootPath));
 	if (_args["initializationOptions"].isObject())
 		changeConfiguration(_args["initializationOptions"]);
@@ -284,8 +289,7 @@ void LanguageServer::handleTextDocumentDidOpen(MessageID /*_id*/, Json::Value co
 
 	auto const text = _args["textDocument"]["text"].asString();
 	auto uri = _args["textDocument"]["uri"].asString();
-	m_fileMappings[clientPathToSourceUnitName(uri)] = uri;
-	m_fileReader.setSource(uri, text);
+	m_fileReader.setSourceDirectly(clientPathToSourceUnitName(uri), text);
 	compileSourceAndReport(uri);
 }
 
@@ -306,7 +310,7 @@ void LanguageServer::handleTextDocumentDidChange(MessageID /*_id*/, Json::Value 
 		string text = jsonContentChange["text"].asString();
 		if (!jsonContentChange["range"].isObject()) // full content update
 		{
-			m_fileReader.setSource(uri, move(text));
+			m_fileReader.setSourceDirectly(clientPathToSourceUnitName(uri), move(text));
 			continue;
 		}
 
@@ -326,7 +330,7 @@ void LanguageServer::handleTextDocumentDidChange(MessageID /*_id*/, Json::Value 
 		size_t const start = static_cast<size_t>(startOpt.value());
 		size_t const count = static_cast<size_t>(endOpt.value()) - start; // TODO: maybe off-by-1 bug? +1 missing?
 		buffer.replace(start, count, move(text));
-		m_fileReader.setSource(uri, move(buffer));
+		m_fileReader.setSourceDirectly(clientPathToSourceUnitName(uri), move(buffer));
 	}
 
 	if (!contentChanges.empty())

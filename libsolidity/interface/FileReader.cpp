@@ -89,6 +89,11 @@ void FileReader::setSource(boost::filesystem::path const& _path, SourceCode _sou
 	m_sourceCodes[cliPathToSourceUnitName(_path)] = std::move(_source);
 }
 
+void FileReader::setSourceDirectly(std::string _sourceUnitName, SourceCode _source)
+{
+	m_sourceCodes[std::move(_sourceUnitName)] = std::move(_source);
+}
+
 void FileReader::setStdin(SourceCode _source)
 {
 	m_sourceCodes["<stdin>"] = std::move(_source);

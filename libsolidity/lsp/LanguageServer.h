@@ -77,6 +77,8 @@ protected:
 
 	/// Translates an LSP client path to the internal source unit name for the compiler.
 	std::string clientPathToSourceUnitName(std::string const& _path) const;
+	/// Translates a compiler-internal source unit name to an LSP client path.
+	std::string sourceUnitNameToClientPath(std::string const& _sourceUnitName) const;
 	/// @returns true if we store the source for given the LSP client path.
 	bool clientPathSourceKnown(std::string const& _path) const;
 
@@ -93,8 +95,6 @@ protected:
 
 	/// FileReader is used for reading files during comilation phase but is also used as VFS for the LSP.
 	frontend::FileReader m_fileReader;
-	/// Mapping from LSP client path to source unit name.
-	std::map<std::string, std::string> m_fileMappings;
 
 	frontend::CompilerStack m_compilerStack;
 	Json::Value m_settingsObject;
