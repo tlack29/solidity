@@ -134,7 +134,7 @@ string LanguageServer::clientPathToSourceUnitName(string const& _path) const
 	string path = _path;
 	if (path.find("file://") == 0)
 		path = path.substr(7);
-	// TODO this still uses the CWD in some circumstances.
+
 	return m_fileReader.cliPathToSourceUnitName(path);
 }
 
