@@ -97,6 +97,8 @@ protected:
 	frontend::FileReader m_fileReader;
 
 	frontend::CompilerStack m_compilerStack;
+
+	/// User-supplied custom configuration settings (such as EVM version).
 	Json::Value m_settingsObject;
 };
 
