@@ -81,10 +81,9 @@ protected:
 
 	// LSP related member fields
 	using Handler = std::function<void(MessageID, Json::Value const&)>;
-	using HandlerMap = std::unordered_map<std::string, Handler>;
 
 	Transport& m_client;
-	HandlerMap m_handlers;
+	std::map<std::string, Handler> m_handlers;
 	/// Server shutdown (but not process exit) has been requested by the client.
 	bool m_shutdownRequested = false;
 	/// Server process exit has been requested by the client.
