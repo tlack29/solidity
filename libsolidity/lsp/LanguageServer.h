@@ -48,7 +48,7 @@ public:
 	/// Compiles the source behind path @p _file and updates the diagnostics pushed to the client.
 	///
 	/// update diagnostics and also pushes any updates to the client.
-	void compileSourceAndReport(std::string const& _file);
+	void compileSourceAndReport(MessageID _messageID, std::string const& _file);
 
 	/// Loops over incoming messages via the transport layer until shutdown condition is met.
 	///

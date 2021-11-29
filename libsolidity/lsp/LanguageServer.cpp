@@ -167,9 +167,13 @@ bool LanguageServer::compile(string const& _path)
 	return true;
 }
 
-void LanguageServer::compileSourceAndReport(string const& _path)
+void LanguageServer::compileSourceAndReport(MessageID _messageID, string const& _path)
 {
-	compile(_path);
+	if (!compile(_path))
+	{
+		m_client.error(_messageID, ErrorCode::RequestFailed, "Compiling failed for source " + _path);
+		return;
+	}
 
 	map<string, Json::Value> diagnosticsBySourceUnit;
 	for (string const& sourceUnitName: m_fileReader.sourceCodes() | ranges::views::keys)
@@ -271,7 +275,7 @@ void LanguageServer::handleWorkspaceDidChangeConfiguration(MessageID, Json::Valu
 		changeConfiguration(_args["settings"]);
 }
 
-void LanguageServer::handleTextDocumentDidOpen(MessageID /*_id*/, Json::Value const& _args)
+void LanguageServer::handleTextDocumentDidOpen(MessageID _id, Json::Value const& _args)
 {
 	if (!_args["textDocument"])
 		return;
@@ -279,7 +283,7 @@ void LanguageServer::handleTextDocumentDidOpen(MessageID /*_id*/, Json::Value co
 	auto const text = _args["textDocument"]["text"].asString();
 	auto uri = _args["textDocument"]["uri"].asString();
 	m_fileReader.setSourceDirectly(clientPathToSourceUnitName(uri), text);
-	compileSourceAndReport(uri);
+	compileSourceAndReport(_id, uri);
 }
 
 void LanguageServer::handleTextDocumentDidChange(MessageID _id, Json::Value const& _args)
@@ -331,5 +335,5 @@ void LanguageServer::handleTextDocumentDidChange(MessageID _id, Json::Value cons
 	}
 
 	if (!contentChanges.empty())
-		compileSourceAndReport(uri);
+		compileSourceAndReport(_id, uri);
 }

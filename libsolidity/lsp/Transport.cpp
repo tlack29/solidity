@@ -47,10 +47,16 @@ optional<Json::Value> JSONTransport::receive()
 {
 	auto const headers = parseHeaders();
 	if (!headers)
+	{
+		error({}, ErrorCode::ParseError, "Could not parse RPC headers.");
 		return nullopt;
+	}
 
 	if (!headers->count("content-length"))
+	{
+		error({}, ErrorCode::ParseError, "No content-length header found.");
 		return nullopt;
+	}
 
 	string const data = readBytes(stoi(headers->at("content-length")));
 
@@ -58,7 +64,10 @@ optional<Json::Value> JSONTransport::receive()
 	string errs;
 	solidity::util::jsonParseStrict(data, jsonMessage, &errs);
 	if (!errs.empty())
+	{
+		error({}, ErrorCode::ParseError, "Could not parse RPC JSON payload. " + errs);
 		return nullopt; // JsonParseError
+	}
 
 	return {move(jsonMessage)};
 }
