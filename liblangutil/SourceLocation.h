@@ -134,7 +134,6 @@ struct LineColumn
 	int column = {-1};
 
 	LineColumn() = default;
-	explicit LineColumn(std::tuple<int, int> const& _t): line{std::get<0>(_t)}, column{std::get<1>(_t)} {}
 	explicit LineColumn(int _line, int _column): line(_line), column(_column) {}
 };
 
