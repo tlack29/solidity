@@ -74,7 +74,7 @@ SourceReference SourceReferenceExtractor::extract(
 
 	LineColumn const interest = charStream.translatePositionToLineColumn(_location->start);
 	LineColumn start = interest;
-	LineColumn end = charStream.translatePositionToLineColumn(_location->end);
+	LineColumn const end = charStream.translatePositionToLineColumn(_location->end);
 	bool const isMultiline = start.line != end.line;
 
 	string line = charStream.lineAtPosition(_location->start);
