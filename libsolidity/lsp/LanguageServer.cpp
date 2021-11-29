@@ -141,7 +141,6 @@ Json::Value LanguageServer::toJson(SourceLocation const& _location) const
 
 string LanguageServer::clientPathToSourceUnitName(string const& _path) const
 {
-	// TOOD test with with base path set.
 	string path = _path;
 	if (path.find("file://") == 0)
 		path = path.substr(7);
@@ -151,8 +150,7 @@ string LanguageServer::clientPathToSourceUnitName(string const& _path) const
 
 string LanguageServer::sourceUnitNameToClientPath(string const& _sourceUnitName) const
 {
-	// TOOD test with with base path set.
-	return "file://" + (m_fileReader.basePath() / _sourceUnitName).generic_string();
+	return "file://" + _sourceUnitName;
 }
 
 bool LanguageServer::clientPathSourceKnown(string const& _path) const
