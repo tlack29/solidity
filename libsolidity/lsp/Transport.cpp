@@ -60,8 +60,6 @@ optional<Json::Value> JSONTransport::receive()
 	if (!errs.empty())
 		return nullopt; // JsonParseError
 
-	//traceMessage(jsonMessage, "Request");
-
 	return {move(jsonMessage)};
 }
 
@@ -101,7 +99,6 @@ void JSONTransport::send(Json::Value _json, MessageID _id)
 	m_output << jsonString;
 
 	m_output.flush();
-	//traceMessage(_json, "Response");
 }
 
 optional<map<string, string>> JSONTransport::parseHeaders()

@@ -245,7 +245,6 @@ bool CommandLineOptions::operator==(CommandLineOptions const& _other) const noex
 		optimizer.expectedExecutionsPerDeployment == _other.optimizer.expectedExecutionsPerDeployment &&
 		optimizer.noOptimizeYul == _other.optimizer.noOptimizeYul &&
 		optimizer.yulSteps == _other.optimizer.yulSteps &&
-		lsp.trace == _other.lsp.trace &&
 #if defined(SOLC_LSP_TCP)
 		lsp.port == _other.lsp.port &&
 #endif
@@ -791,21 +790,16 @@ General Information)").c_str(),
 	;
 	desc.add(optimizerOptions);
 
+#if defined(SOLC_LSP_TCP)
 	po::options_description lspOptions("LSP Options");
 	lspOptions.add_options()
-#if defined(SOLC_LSP_TCP)
 		(
 			"lsp-port",
 			po::value<unsigned>()->value_name("PORT"),
 			"Enables LSP over TCP instead of stdio and uses the specified TCP port."
-		)
-#endif
-		(
-			"lsp-trace",
-			po::value<string>()->value_name("FILE"),
-			"Enables LSP request tracing to be logged into the specified file."
 		);
 	desc.add(lspOptions);
+#endif
 
 	po::options_description smtCheckerOptions("Model Checker Options");
 	smtCheckerOptions.add_options()
@@ -1266,9 +1260,6 @@ bool CommandLineParser::processArgs()
 			return false;
 		}
 	}
-
-	if (m_args.count("lsp-trace"))
-		m_options.lsp.trace = boost::filesystem::path(m_args.at("lsp-trace").as<string>());
 
 #if defined(SOLC_LSP_TCP)
 	if (m_args.count("lsp-port"))

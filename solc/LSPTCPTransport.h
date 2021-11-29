@@ -27,14 +27,13 @@ namespace solidity::lsp
 
 class LSPTCPTransport: public lsp::Transport {
 public:
-	LSPTCPTransport(unsigned short _port, Trace _traceLevel, std::function<void(std::string_view)>);
+	explicit LSPTCPTransport(unsigned short _port, std::string const& _address = "127.0.0.1");
 
-	void setTraceLevel(Trace _traceLevel) override;
 	bool closed() const noexcept override;
 	std::optional<Json::Value> receive() override;
-	void notify(std::string const& _method, Json::Value const& _params) override;
-	void reply(lsp::MessageID _id, Json::Value const& _result) override;
-	void error(lsp::MessageID _id, lsp::ErrorCode _code, std::string const& _message) override;
+	void notify(std::string _method, Json::Value _params) override;
+	void reply(lsp::MessageID _id, Json::Value _result) override;
+	void error(lsp::MessageID _id, lsp::ErrorCode _code, std::string _message) override;
 
 private:
 	boost::asio::io_service m_io_service;
@@ -42,8 +41,6 @@ private:
 	boost::asio::ip::tcp::acceptor m_acceptor;
 	std::optional<boost::asio::ip::tcp::iostream> m_stream;
 	std::optional<lsp::JSONTransport> m_jsonTransport;
-	Trace m_traceLevel;
-	std::function<void(std::string_view)> m_trace;
 };
 
 } // end namespace

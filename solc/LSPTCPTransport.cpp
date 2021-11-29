@@ -27,38 +27,23 @@
 namespace solidity::lsp
 {
 
-using std::function;
 using std::nullopt;
 using std::optional;
 using std::string_view;
-using std::to_string;
 
 using namespace std::string_literals;
 
-LSPTCPTransport::LSPTCPTransport(unsigned short _port, Trace _traceLevel, function<void(string_view)> _trace):
+LSPTCPTransport::LSPTCPTransport(unsigned short _port, std::string const& _address):
 	m_io_service(),
-	m_endpoint(boost::asio::ip::make_address("127.0.0.1"), _port),
+	m_endpoint(boost::asio::ip::make_address(_address), _port),
 	m_acceptor(m_io_service),
 	m_stream(),
-	m_jsonTransport(),
-	m_traceLevel{_traceLevel},
-	m_trace(_trace ? std::move(_trace) : [](string_view) {})
+	m_jsonTransport()
 {
 	m_acceptor.open(m_endpoint.protocol());
 	m_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 	m_acceptor.bind(m_endpoint);
 	m_acceptor.listen();
-
-	if (m_traceLevel >= Trace::Messages)
-		m_trace("Listening on tcp://127.0.0.1:"s + to_string(_port));
-}
-
-void LSPTCPTransport::setTraceLevel(Trace _traceLevel)
-{
-	m_traceLevel = _traceLevel;
-
-	if (m_jsonTransport)
-		m_jsonTransport->setTraceLevel(_traceLevel);
 }
 
 bool LSPTCPTransport::closed() const noexcept
@@ -76,40 +61,36 @@ optional<Json::Value> LSPTCPTransport::receive()
 		if (clientClosed())
 			return nullopt;
 
-		auto const remoteAddr = m_stream.value().socket().remote_endpoint().address().to_string();
-		auto const remotePort = m_stream.value().socket().remote_endpoint().port();
-		m_trace("New client connected from "s + remoteAddr + ":" + to_string(remotePort) + ".");
-		m_jsonTransport.emplace(m_stream.value(), m_stream.value(), m_traceLevel, [this](auto msg) { m_trace(msg); });
+		m_jsonTransport.emplace(m_stream.value(), m_stream.value());
 	}
+
 	if (auto value = m_jsonTransport.value().receive(); value.has_value())
 		return value;
 
 	if (clientClosed())
 	{
-		m_trace("Client disconnected.");
 		m_jsonTransport.reset();
 		m_stream.reset();
 	}
 	return nullopt;
 }
 
-void LSPTCPTransport::notify(std::string const& _method, Json::Value const& _params)
+void LSPTCPTransport::notify(std::string _method, Json::Value _params)
 {
 	if (m_jsonTransport.has_value())
-		m_jsonTransport.value().notify(_method, _params);
+		m_jsonTransport.value().notify(move(_method), _params);
 }
 
-void LSPTCPTransport::reply(MessageID _id, Json::Value const& _result)
+void LSPTCPTransport::reply(MessageID _id, Json::Value _result)
 {
-	fmt::print("reply: {}\n{}\n", util::jsonPrettyPrint(_id), util::jsonPrettyPrint(_result));
 	if (m_jsonTransport.has_value())
 		m_jsonTransport.value().reply(_id, _result);
 }
 
-void LSPTCPTransport::error(MessageID _id, ErrorCode _code, std::string const& _message)
+void LSPTCPTransport::error(MessageID _id, ErrorCode _code, std::string _message)
 {
 	if (m_jsonTransport.has_value())
-		m_jsonTransport.value().error(_id, _code, _message);
+		m_jsonTransport.value().error(_id, _code, move(_message));
 }
 
 }
