@@ -46,16 +46,6 @@ using namespace solidity::frontend;
 namespace
 {
 
-void log(string const& _message)
-{
-#if 0
-	static ofstream logFile("/tmp/solc.lsp.log", std::ios::app);
-	logFile << _message << endl;
-#else
-	(void)_message;
-#endif
-}
-
 Json::Value toJson(LineColumn _pos)
 {
 	Json::Value json = Json::objectValue;
@@ -246,8 +236,7 @@ bool LanguageServer::run()
 		}
 		catch (exception const& e)
 		{
-			m_client.error({}, ErrorCode::InternalError, "Unhandled exception: " + string(e.what()));
-			log("Unhandled exception caught when handling message. "s + e.what());
+			m_client.error({}, ErrorCode::InternalError, "Unhandled exception: "s + e.what());
 		}
 	}
 	return m_shutdownRequested;
@@ -263,8 +252,6 @@ void LanguageServer::handleInitialize(MessageID _id, Json::Value const& _args)
 	else if (Json::Value rootPath = _args["rootPath"])
 		rootPath = rootPath.asString();
 
-	//log("root path: " + rootPath);
-	// TODO the lsp client probably uses file://... for the root path
 	m_fileReader.setBasePath(boost::filesystem::path(rootPath));
 	if (_args["initializationOptions"].isObject())
 		changeConfiguration(_args["initializationOptions"]);
