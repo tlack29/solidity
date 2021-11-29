@@ -68,7 +68,16 @@ protected:
 	/// Compile everything until after analysis phase.
 	void compile();
 
-	DocumentPosition extractDocumentPosition(Json::Value const& _json) const;
+	std::optional<langutil::SourceLocation> parsePosition(
+		std::string const& _sourceUnitName,
+		Json::Value const& _position
+	) const;
+	/// @returns the source location given a source unit name and an LSP Range object,
+	/// or nullopt on failure.
+	std::optional<langutil::SourceLocation> parseRange(
+		std::string const& _sourceUnitName,
+		Json::Value const& _range
+	) const;
 	Json::Value toRange(langutil::SourceLocation const& _location) const;
 	Json::Value toJson(langutil::SourceLocation const& _location) const;
 

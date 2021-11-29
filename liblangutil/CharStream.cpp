@@ -145,18 +145,18 @@ string CharStream::singleLineSnippet(string const& _sourceCode, SourceLocation c
 	return cut;
 }
 
-optional<int> CharStream::translateLineColumnToPosition(int _line, int _column) const
+optional<int> CharStream::translateLineColumnToPosition(LineColumn const& _lineColumn) const
 {
-	return translateLineColumnToPosition(m_source, _line, _column);
+	return translateLineColumnToPosition(m_source, _lineColumn);
 }
 
-optional<int> CharStream::translateLineColumnToPosition(std::string const& _text, int _line, int _column)
+optional<int> CharStream::translateLineColumnToPosition(std::string const& _text, LineColumn const& _input)
 {
-	if (_line < 0)
+	if (_input.line < 0)
 		return nullopt;
 
 	size_t offset = 0;
-	for (int i = 0; i < _line; i++)
+	for (int i = 0; i < _input.line; i++)
 	{
 		offset = _text.find('\n', offset);
 		if (offset == _text.npos)
@@ -168,8 +168,8 @@ optional<int> CharStream::translateLineColumnToPosition(std::string const& _text
 	if (endOfLine == string::npos)
 		endOfLine = _text.size();
 
-	if (offset + static_cast<size_t>(_column) > endOfLine)
+	if (offset + static_cast<size_t>(_input.column) > endOfLine)
 		return nullopt;
-	return offset + static_cast<size_t>(_column);
+	return offset + static_cast<size_t>(_input.column);
 }
 

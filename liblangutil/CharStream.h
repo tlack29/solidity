@@ -103,12 +103,10 @@ public:
 	///@}
 
 	/// Translates a line:column to the absolute position.
-	/// Parameters @p _line and @p _column are 0-based indices.
-	std::optional<int> translateLineColumnToPosition(int _line, int _column) const;
+	std::optional<int> translateLineColumnToPosition(LineColumn const& _lineColumn) const;
 
 	/// Translates a line:column to the absolute position for the given input text.
-	/// Parameters @p _line and @p _column are 0-based indices.
-	static std::optional<int> translateLineColumnToPosition(std::string const& _text, int _line, int _column);
+	static std::optional<int> translateLineColumnToPosition(std::string const& _text, LineColumn const& _input);
 
 	/// Tests whether or not given octet sequence is present at the current position in stream.
 	/// @returns true if the sequence could be found, false otherwise.

@@ -63,6 +63,14 @@ Json::Value toJsonRange(LineColumn const& _start, LineColumn const& _end)
 	return json;
 }
 
+optional<LineColumn> parseLineColumn(Json::Value const& _lineColumn)
+{
+	if (_lineColumn.isObject() && _lineColumn["line"].isInt() && _lineColumn["character"].isInt())
+		return LineColumn{_lineColumn["line"].asInt(), _lineColumn["character"].asInt()};
+	else
+		return {};
+}
+
 constexpr int toDiagnosticSeverity(Error::Type _errorType)
 {
 	// 1=Error, 2=Warning, 3=Info, 4=Hint
@@ -91,21 +99,39 @@ LanguageServer::LanguageServer(Transport& _transport):
 		{"textDocument/didOpen", bind(&LanguageServer::handleTextDocumentDidOpen, this, _1, _2)},
 		{"workspace/didChangeConfiguration", bind(&LanguageServer::handleWorkspaceDidChangeConfiguration, this, _1, _2)},
 	},
-	m_fileReader{"/"},
+	m_fileReader{"/" /* base path */},
 	m_compilerStack{bind(&FileReader::readFile, ref(m_fileReader), _1, _2)}
-
 {
 }
 
-DocumentPosition LanguageServer::extractDocumentPosition(Json::Value const& _json) const
+optional<SourceLocation> LanguageServer::parsePosition(
+	string const& _sourceUnitName,
+	Json::Value const& _position
+) const
 {
-	DocumentPosition dpos{};
+	if (!m_fileReader.sourceCodes().count(_sourceUnitName))
+		return {};
 
-	dpos.path = _json["textDocument"]["uri"].asString();
-	dpos.position.line = _json["position"]["line"].asInt();
-	dpos.position.column = _json["position"]["character"].asInt();
+	if (optional<LineColumn> lineColumn = parseLineColumn(_position))
+		if (optional<int> const offset = CharStream::translateLineColumnToPosition(
+			m_fileReader.sourceCodes().at(_sourceUnitName),
+			*lineColumn
+		))
+			return SourceLocation{*offset, *offset, make_shared<string>(_sourceUnitName)};
+	return {};
+}
 
-	return dpos;
+optional<SourceLocation> LanguageServer::parseRange(string const& _sourceUnitName, Json::Value const& _range) const
+{
+	if (!_range.isObject())
+		return {};
+	optional<SourceLocation> start = parsePosition(_sourceUnitName, _range["start"]);
+	optional<SourceLocation> end = parsePosition(_sourceUnitName, _range["end"]);
+	if (!start || !end)
+		return {};
+	solAssert(*start->sourceName == *end->sourceName);
+	start->end = end->end;
+	return start;
 }
 
 Json::Value LanguageServer::toRange(SourceLocation const& _location) const
@@ -296,33 +322,25 @@ void LanguageServer::handleTextDocumentDidChange(MessageID _id, Json::Value cons
 			return;
 		}
 
+		string const sourceUnitName = clientPathToSourceUnitName(uri);
 		string text = jsonContentChange["text"].asString();
-		if (!jsonContentChange["range"].isObject()) // full content update
+		if (jsonContentChange["range"].isObject()) // otherwise full content update
 		{
-			m_fileReader.setSourceDirectly(clientPathToSourceUnitName(uri), move(text));
-			continue;
+			optional<SourceLocation> change = parseRange(sourceUnitName, jsonContentChange["range"]);
+			if (!change || !change->hasText())
+			{
+				m_client.error(
+					_id,
+					ErrorCode::RequestFailed,
+					"Invalid source range: " + jsonCompactPrint(jsonContentChange["range"])
+				);
+				return;
+			}
+			string buffer = m_fileReader.sourceCodes().at(sourceUnitName);
+			buffer.replace(static_cast<size_t>(change->start), static_cast<size_t>(change->end - change->start), move(text));
+			text = move(buffer);
 		}
-
-		Json::Value const jsonRange = jsonContentChange["range"];
-		// TODO could use a general helper to read line/character json objects into int pairs or whateveer
-		int const startLine = jsonRange["start"]["line"].asInt();
-		int const startColumn = jsonRange["start"]["character"].asInt();
-		int const endLine = jsonRange["end"]["line"].asInt();
-		int const endColumn = jsonRange["end"]["character"].asInt();
-
-		string buffer = m_fileReader.sourceCodes().at(clientPathToSourceUnitName(uri));
-		optional<int> const startOpt = CharStream::translateLineColumnToPosition(buffer, startLine, startColumn);
-		optional<int> const endOpt = CharStream::translateLineColumnToPosition(buffer, endLine, endColumn);
-		if (!startOpt || !endOpt)
-		{
-			m_client.error(_id, ErrorCode::RequestFailed, "Invalid source range: " + jsonCompactPrint(jsonRange));
-			return;
-		}
-
-		size_t const start = static_cast<size_t>(startOpt.value());
-		size_t const count = static_cast<size_t>(endOpt.value()) - start;
-		buffer.replace(start, count, move(text));
-		m_fileReader.setSourceDirectly(clientPathToSourceUnitName(uri), move(buffer));
+		m_fileReader.setSourceDirectly(sourceUnitName, move(text));
 	}
 
 	if (!contentChanges.empty())

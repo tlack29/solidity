@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(test_fail)
 	{                                                                        \
 		auto const source = std::make_shared<CharStream>((_text), "source"); \
 		auto const actualPosition =                                          \
-			source->translateLineColumnToPosition((_line), (_column));       \
+			source->translateLineColumnToPosition(LineColumn{(_line), (_column)}); \
 		BOOST_CHECK_EQUAL(actualPosition.value_or(-1), -1);                  \
 	}                                                                        \
 	while (0)
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(test_fail)
 	{                                                                        \
 		auto const source = std::make_shared<CharStream>((_text), "source"); \
 		auto const actualPosition =                                          \
-			source->translateLineColumnToPosition((_line), (_column));       \
+			source->translateLineColumnToPosition(LineColumn{(_line), (_column)}); \
 		BOOST_CHECK(actualPosition.has_value());                             \
 		BOOST_CHECK_EQUAL(*actualPosition, (_expectedPosition));             \
 	}                                                                        \
