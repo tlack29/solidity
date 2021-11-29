@@ -1261,19 +1261,6 @@ bool CommandLineParser::processArgs()
 		}
 	}
 
-#if defined(SOLC_LSP_TCP)
-	if (m_args.count("lsp-port"))
-	{
-		unsigned const port = m_args.at("lsp-port").as<unsigned>();
-		if (port > 0xFFFF)
-		{
-			serr() << "LSP port number not in valid port range " << port << '.' << endl;
-			return false;
-		}
-		m_options.lsp.port = port;
-	}
-#endif
-
 	if (m_args.count(g_strModelCheckerContracts))
 	{
 		string contractsStr = m_args[g_strModelCheckerContracts].as<string>();

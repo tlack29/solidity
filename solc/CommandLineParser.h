@@ -227,13 +227,6 @@ struct CommandLineOptions
 		std::optional<std::string> yulSteps;
 	} optimizer;
 
-#if defined(SOLC_LSP_TCP)
-	struct
-	{
-		std::optional<unsigned short> port;
-	} lsp;
-#endif
-
 	struct
 	{
 		bool initialize = false;

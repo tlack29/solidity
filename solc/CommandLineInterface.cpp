@@ -25,10 +25,6 @@
 
 #include "license.h"
 
-#if defined(SOLC_LSP_TCP)
-#include <solc/LSPTCPTransport.h>
-#endif
-
 #include "solidity/BuildInfo.h"
 
 #include <libsolidity/interface/Version.h>
@@ -906,15 +902,6 @@ void CommandLineInterface::handleAst()
 
 void CommandLineInterface::serveLSP()
 {
-#if defined(SOLC_LSP_TCP)
-	if (m_options.lsp.port.has_value())
-	{
-		lsp::LSPTCPTransport transport(m_options.lsp.port.value());
-		lsp::LanguageServer{transport}.run();
-		return;
-	}
-#endif
-
 	lsp::JSONTransport transport;
 	lsp::LanguageServer{transport}.run();
 }
