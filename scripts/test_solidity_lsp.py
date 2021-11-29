@@ -335,6 +335,7 @@ class SolcTests:
             { 'kind': lsp_types.DocumentHighlightKind.Text, 'line': 23, 'from': 18, 'to': 25 }
         ]
         self.expect(len(reply) == len(ENUM_TYPE_HIGHLIGHTS), f"expect {len(ENUM_TYPE_HIGHLIGHTS)} highlights")
+        # pylint: disable-next=consider-using-enumerate
         for i in range(0, len(reply)):
             self.expect(reply[i].kind == ENUM_TYPE_HIGHLIGHTS[i]['kind'], "check kind")
             self.expect(
@@ -382,7 +383,7 @@ class SolidityLSPTestSuite: # {{{
 
     def parse_args_and_prepare(self):
         """
-        Parses CLI args and retruns tuple of path to solc executable
+        Parses CLI args and returns tuple of path to solc executable
         and path to solidity-project root dir.
         """
         parser = argparse.ArgumentParser(description='Solidity LSP Test suite')

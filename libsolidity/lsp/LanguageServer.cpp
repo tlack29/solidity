@@ -313,7 +313,7 @@ void LanguageServer::handleTextDocumentDidChange(MessageID _id, Json::Value cons
 		}
 
 		Json::Value const jsonRange = jsonContentChange["range"];
-		// TODO could use a general helper to read line/characer json objects into int pairs or whateveer
+		// TODO could use a general helper to read line/character json objects into int pairs or whateveer
 		int const startLine = jsonRange["start"]["line"].asInt();
 		int const startColumn = jsonRange["start"]["character"].asInt();
 		int const endLine = jsonRange["end"]["line"].asInt();
