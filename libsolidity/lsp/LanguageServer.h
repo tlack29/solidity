@@ -45,10 +45,8 @@ public:
 	/// @param _transport Customizable transport layer.
 	explicit LanguageServer(Transport& _transport);
 
-	/// Compiles the source behind path @p _file and updates the diagnostics pushed to the client.
-	///
-	/// update diagnostics and also pushes any updates to the client.
-	void compileSourceAndReport(MessageID _messageID, std::string const& _file);
+	/// Re-compiles the project and updates the diagnostics pushed to the client.
+	void compileAndUpdateDiagnostics();
 
 	/// Loops over incoming messages via the transport layer until shutdown condition is met.
 	///
@@ -67,9 +65,8 @@ protected:
 	/// Invoked when the server user-supplied configuration changes (initiated by the client).
 	void changeConfiguration(Json::Value const&);
 
-	/// Requests compilation of given client path.
-	/// @returns false if the file was not found.
-	bool compile(std::string const& _path);
+	/// Compile everything until after analysis phase.
+	void compile();
 
 	DocumentPosition extractDocumentPosition(Json::Value const& _json) const;
 	Json::Value toRange(langutil::SourceLocation const& _location) const;

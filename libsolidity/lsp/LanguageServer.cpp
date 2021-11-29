@@ -153,27 +153,18 @@ void LanguageServer::changeConfiguration(Json::Value const& _settings)
 	m_settingsObject = _settings;
 }
 
-bool LanguageServer::compile(string const& _path)
+void LanguageServer::compile()
 {
 	// TODO: optimize! do not recompile if nothing has changed (file(s) not flagged dirty).
-
-	if (!clientPathSourceKnown(_path))
-		return false;
 
 	m_compilerStack.reset(false);
 	m_compilerStack.setSources(m_fileReader.sourceCodes());
 	m_compilerStack.compile(CompilerStack::State::AnalysisPerformed);
-
-	return true;
 }
 
-void LanguageServer::compileSourceAndReport(MessageID _messageID, string const& _path)
+void LanguageServer::compileAndUpdateDiagnostics()
 {
-	if (!compile(_path))
-	{
-		m_client.error(_messageID, ErrorCode::RequestFailed, "Compiling failed for source " + _path);
-		return;
-	}
+	compile();
 
 	map<string, Json::Value> diagnosticsBySourceUnit;
 	for (string const& sourceUnitName: m_fileReader.sourceCodes() | ranges::views::keys)
@@ -275,15 +266,15 @@ void LanguageServer::handleWorkspaceDidChangeConfiguration(MessageID, Json::Valu
 		changeConfiguration(_args["settings"]);
 }
 
-void LanguageServer::handleTextDocumentDidOpen(MessageID _id, Json::Value const& _args)
+void LanguageServer::handleTextDocumentDidOpen(MessageID, Json::Value const& _args)
 {
 	if (!_args["textDocument"])
 		return;
 
-	auto const text = _args["textDocument"]["text"].asString();
+	string text = _args["textDocument"]["text"].asString();
 	auto uri = _args["textDocument"]["uri"].asString();
-	m_fileReader.setSourceDirectly(clientPathToSourceUnitName(uri), text);
-	compileSourceAndReport(_id, uri);
+	m_fileReader.setSourceDirectly(clientPathToSourceUnitName(uri), move(text));
+	compileAndUpdateDiagnostics();
 }
 
 void LanguageServer::handleTextDocumentDidChange(MessageID _id, Json::Value const& _args)
@@ -335,5 +326,5 @@ void LanguageServer::handleTextDocumentDidChange(MessageID _id, Json::Value cons
 	}
 
 	if (!contentChanges.empty())
-		compileSourceAndReport(_id, uri);
+		compileAndUpdateDiagnostics();
 }
