@@ -1,0 +1,18 @@
+name: KinglackdogNFt
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+
+  build:
+
+    runs-on: mintable
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: KinglackdogNFT
+      run: KinglackdogNFT . --file kinglackdogNFT --tag my-image-name:$(date +%s)
